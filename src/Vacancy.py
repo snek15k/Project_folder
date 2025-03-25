@@ -2,9 +2,9 @@ class Vacancy:
     __slots__ = ("title", "url", "salary", "description")
 
     def __init__(self, title: str, url: str, salary: str, description: str):
-        self.title = title
-        self.url = url
-        self.salary = salary if salary else "Зарплата не указана"  # Убедимся, что тут всегда строка
+        self.title = self._validate_title(title)
+        self.url = self._validate_url(url)
+        self.salary = self._validate_salary(salary)
         self.description = description
 
     def to_dict(self) -> dict:
@@ -27,6 +27,25 @@ class Vacancy:
 
     def get_salary_value(self) -> int | str:
         """Возвращает числовое значение зарплаты (если указано), иначе сообщение 'Зарплата не указана'."""
-        if isinstance(self.salary, str) and self.salary.isdigit():
-            return int(self.salary)
-        return "Зарплата не указана"  # Если зарплата не указана или не числовая
+        if isinstance(self.salary, str) and self.salary.replace(" ", "").isdigit():
+            return int(self.salary.replace(" ", ""))
+        return "Зарплата не указана"
+
+    @staticmethod
+    def _validate_title(title: str) -> str:
+        """Валидация названия вакансии."""
+        if not title or not isinstance(title, str):
+            raise ValueError("Название вакансии не может быть пустым.")
+        return title.strip()
+
+    @staticmethod
+    def _validate_url(url: str) -> str:
+        """Валидация URL вакансии."""
+        if not url.startswith("http"):
+            raise ValueError("Некорректный URL вакансии.")
+        return url.strip()
+
+    @staticmethod
+    def _validate_salary(salary: str) -> str:
+        """Валидация зарплаты."""
+        return salary if salary else "Зарплата не указана"

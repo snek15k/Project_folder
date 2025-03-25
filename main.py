@@ -20,7 +20,7 @@ def main():
 
     # Преобразуем вакансии в объекты Vacancy и добавляем в хранилище
     for vac_data in vacancies_data:
-        salary = vac_data.get("salary", "Зарплата не указана")
+        salary = vac_data.get("salary", "Зарплата не указана")  # Зарплата будет обработана в get_vacancies
         vacancy = Vacancy(
             title=vac_data["name"],
             url=vac_data["alternate_url"],

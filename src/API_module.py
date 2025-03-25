@@ -3,51 +3,24 @@ from abc import ABC, abstractmethod
 
 
 class JobAPI(ABC):
-    """
-    Абстрактный класс для работы с API платформ вакансий.
-    """
+    """Абстрактный класс для работы с API платформ с вакансиями."""
 
     @abstractmethod
     def get_vacancies(self, query: str, per_page: int = 20) -> list:
-        """Метод для получения вакансий по запросу."""
         pass
 
 
-def format_salary(salary_data):
-    """Форматирование зарплаты."""
-    if not salary_data or (salary_data.get('from') is None and salary_data.get('to') is None):
-        return "Зарплата не указана"
-
-    salary_from = salary_data.get('from')
-    salary_to = salary_data.get('to')
-    currency = salary_data.get('currency', 'N/A')
-
-    # Если зарплата указана от и до
-    if salary_from and salary_to:
-        return f"{salary_from} - {salary_to} {currency}"
-    # Если указана только от
-    elif salary_from:
-        return f"От {salary_from} {currency}"
-    # Если указана только до
-    elif salary_to:
-        return f"До {salary_to} {currency}"
-    else:
-        return "Зарплата не указана"
-
-
 class HeadHunterAPI(JobAPI):
-    """
-    Класс для работы с API hh.ru.
-    """
-    BASE_URL = "https://api.hh.ru/vacancies"
+    """Класс для работы с API hh.ru."""
 
     def __init__(self):
-        self.russia_id = 113  # ID России на hh.ru
+        self._base_url = "https://api.hh.ru/vacancies"  # Приватный атрибут
+        self._russia_id = "113"  # ID России в API hh.ru (теперь передается корректно)
 
     def get_vacancies(self, query: str, per_page: int = 20) -> list:
         """Получение вакансий с hh.ru."""
-        params = {"text": query, "per_page": per_page}
-        response = requests.get(self.BASE_URL, params=params)
+        params = {"text": query, "per_page": per_page, "area": self._russia_id}
+        response = requests.get(self._base_url, params=params)
 
         if response.status_code != 200:
             raise Exception(f"Ошибка запроса к API hh.ru: {response.status_code}")
@@ -58,19 +31,25 @@ class HeadHunterAPI(JobAPI):
         # Получаем список вакансий
         vacancies_data = data.get("items", [])
 
-        # Фильтруем вакансии по стране (ID страны должен быть 113 для России)
-        vacancies_data = [
-            vacancy for vacancy in vacancies_data
-            if vacancy.get("area") and
-            vacancy["area"].get("id") == str(self.russia_id)  # Проверяем ID страны
-        ]
-
         # Обрабатываем зарплату для каждой вакансии
         for vacancy in vacancies_data:
             salary = vacancy.get("salary")
-            if salary:
-                vacancy['salary'] = format_salary(salary)
-            else:
-                vacancy['salary'] = "Зарплата не указана"
+            vacancy["salary"] = self.format_salary(salary) if salary else "Зарплата не указана"
 
         return vacancies_data
+
+    @staticmethod
+    def format_salary(salary: dict) -> str:
+        """Форматирование зарплаты в читаемый вид."""
+        if salary:
+            from_salary = salary.get("from")
+            to_salary = salary.get("to")
+            currency = salary.get("currency", "не указана")
+
+            if from_salary and to_salary:
+                return f"{from_salary} - {to_salary} {currency}"
+            if from_salary:
+                return f"от {from_salary} {currency}"
+            if to_salary:
+                return f"до {to_salary} {currency}"
+        return "Зарплата не указана"
